@@ -1,5 +1,6 @@
 "use client"
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, } from 'react';
+import { BrowserBarcodeReader } from '@zxing/library';
 
 const POSPage = () => {
     // 商品コード入力用のrefを作成
@@ -11,24 +12,37 @@ const POSPage = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [totalAmountWithTax, setTotalAmountWithTax] = useState(0);
 
-    // 商品コード読み込みボタンのイベントハンドラー
-    const handleLoadProduct = async () => {
-        const productCode = productCodeRef.current.value;
-        if (productCode) {
-            try {
-                const response = await fetch(`http://localhost:5000/product?code=${productCode}`, { cache: "no-cache" });
-                if (!response.ok) throw new Error('Response not ok');
-                const data = await response.json();
-                if (data.length === 0) { // データが空の場合
-                    setProductData({ id: '', code: '', name: '商品マスタが未登録です', price: 0 });
-                } else {
-                    console.log(data["0"])
-                    setProductData(data["0"]); // Set the state with the fetched data
-                }
-            } catch (error) {
-                console.error('商品情報の読み込みに失敗しました', error);
-                setProductData({ id: '', code: '', name: '商品マスタが未登録です', price: 0 }); // エラー時の処理を追加
+    useEffect(() => {
+        const codeReader = new BrowserBarcodeReader();
+        codeReader
+            .decodeFromInputVideoDevice(undefined, 'video')
+            .then((result) => {
+                console.log(result.getText()); // バーコードのテキストを取得
+                handleLoadProduct(result.getText()); // 取得したバーコードを商品コードとして読み込む
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+        return () => {
+            codeReader.reset(); // コンポーネントがアンマウントされるときにリーダーをリセット
+        };
+    }, []);
+
+    // バーコードを処理して商品情報を取得
+    const handleLoadProduct = async (barcode) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/product?code=${barcode}`, { cache: "no-cache" });
+            if (!response.ok) throw new Error('Response not ok');
+            const data = await response.json();
+            if (data.length === 0) { // データが空の場合
+                setProductData({ id: '', code: '', name: '商品マスタが未登録です', price: 0 });
+            } else {
+                console.log(data["0"])
+                setProductData(data["0"]); // バーコードに対応する商品データをセット
             }
+        } catch (error) {
+            console.error('商品情報の読み込みに失敗しました', error);
+            setProductData({ id: '', code: '', name: '商品マスタが未登録です', price: 0 }); // エラー時の処理を追加
         }
     };
 
@@ -56,7 +70,7 @@ const POSPage = () => {
         };
 
         try {
-            const response = await fetch(`http://localhost:5000/purchase`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/purchase`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -93,22 +107,37 @@ const POSPage = () => {
                     <div className="flex-1 bg-blue-100 m-2 p-2">
                         {/* コード入力エリア */}
                         <div className="flex flex-col items-center w-full mb-4">
-                            <div className="w-full m-2">
-                                <input
-                                    ref={productCodeRef} // refをinputに紐付ける
-                                    type="text"
-                                    placeholder="コードを入力"
-                                    name="productCode"
-                                    className="input input-bordered w-full"
-                                />
-                            </div>
+                            {/* 商品コード読み込みボタン */}
+                            {/* 以下を追加 */}
                             <button
-                                onClick={handleLoadProduct} // イベントハンドラーをボタンに紐付ける
-                                className="btn btn-primary m-2 w-full">
-                                商品コード読み込み
+                                onClick={() => {
+                                    const codeReader = new BrowserBarcodeReader();
+                                    codeReader
+                                        .decodeOnceFromVideoDevice(undefined, 'video')
+                                        .then((result) => {
+                                            console.log(result.getText());
+                                            handleLoadProduct(result.getText());
+                                        })
+                                        .catch((err) => {
+                                            console.error(err);
+                                        });
+                                }}
+                                className="btn btn-primary m-2 w-full"
+                            >
+                                商品コードスキャン
                             </button>
+                            {/* 動画エリア */}
+                            <video id="video" className="w-full"></video>
                         </div>
                         <div className="flex flex-col items-center w-full mb-4">
+                            <div className="w-full m-2">
+                                <div className="label">
+                                    <span className="label-text">商品コード</span>
+                                </div>
+                                <div className="input input-bordered w-full bg-gray-100 text-gray-600 flex items-center justify-center">
+                                    {productData ? productData.code : '商品コード'}
+                                </div>
+                            </div>
                             <div className="w-full m-2">
                                 <div className="label">
                                     <span className="label-text">商品名</span>
@@ -154,7 +183,7 @@ const POSPage = () => {
                                             <tr key={index}>
                                                 <td>{product.name}</td>
                                                 <td>{product.price}円</td>
-                                                <td>{product.quantity}</td> {/* 数量は仮に1としています */}
+                                                <td>{product.quantity}</td>
                                                 <td>{product.price * product.quantity}円</td>
                                             </tr>
                                         ))}

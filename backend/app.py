@@ -55,7 +55,7 @@ def purchase():
         })
         total_amount_ex_tax += item.get('price', 0)
         
-    tax_rate = 0.10  # 消費税率10%
+    tax_rate = crud.get_tax_rate("10")  # 仮に消費税区分が"10"で固定
     total_amount = total_amount_ex_tax * (1 + tax_rate)
 
     # 1-4 取引テーブルを更新する

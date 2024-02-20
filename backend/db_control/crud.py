@@ -12,6 +12,7 @@ import datetime
  
 from db_control.connect import engine
 from db_control import create_tables # 初回だけコメントアウトを消す
+from .mymodels import Tax
 
  
 
@@ -152,3 +153,13 @@ def mydelete(mymodel, key_value, key_name):
     # セッションを閉じる
     session.close()
     return str(key_value) + " is deleted"
+
+def get_tax_rate(tax_code):
+    with engine.begin() as connection:
+        result = connection.execute(
+            select(Tax.percent).where(Tax.code == tax_code)
+        ).scalar()
+    if result:
+        return float(result) / 100  # パーセントを小数点表記に変換
+    else:
+        return None  # 税率が見つからない場合はNoneを返す

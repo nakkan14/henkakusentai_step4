@@ -14,7 +14,7 @@ class Product(Base):
 
 class Trade(Base):
     __tablename__ = 'trades'
-    trd_id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     datetime = Column(DateTime, default=datetime.utcnow)
     emp_cd = Column(String(10), nullable=False)
     store_cd = Column(String(5), nullable=False)
@@ -24,16 +24,16 @@ class Trade(Base):
 
 class Tax(Base):
     __tablename__ = 'taxs'
-    trd_id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     code = Column(String(2), unique=True) 
     name = Column(String(20))
     percent = Column(Numeric)
 
 class Trade_detail(Base):
     __tablename__ = 'trade_details'
-    trd_id = Column(Integer, ForeignKey('trades.trd_id'), nullable=False)
+    trd_id = Column(Integer, ForeignKey('trades.id'), nullable=False)
     dtl_id = Column(Integer, primary_key=True, autoincrement=True)
-    prd_id = Column(Integer, ForeignKey('products.prd_id'), nullable=False)
+    prd_id = Column(Integer, ForeignKey('products.id'), nullable=False)
     prd_code = Column(String(13), nullable=False)
     prd_name = Column(String(50), nullable=False)
     prd_price = Column(Integer, nullable=False)
