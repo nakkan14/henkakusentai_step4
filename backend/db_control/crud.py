@@ -93,6 +93,32 @@ def myselect(mymodel, key_value, key_name):
     session.close()
     return result_json
  
+
+#def myselect(mymodel, key_value, key_name):
+    # session構築
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    # 直接SQLクエリを組み立てる（脆弱な方法）
+    if key_value == "last":
+        query_str = f"SELECT * FROM {mymodel.__tablename__} ORDER BY {key_name} DESC LIMIT 1"
+    else:
+        query_str = f"SELECT * FROM {mymodel.__tablename__} WHERE {key_name} = '{key_value}'"
+    
+    result = session.execute(query_str)
+    
+    # 結果をオブジェクトから辞書に変換し、リストに追加
+    result_dict_list = [dict(row) for row in result]
+    
+    # セッションを閉じる
+    session.close()
+
+    # リストをJSONに変換
+    result_json = json.dumps(result_dict_list, default=str)  # 注意: datetime_handlerが必要な場合は適宜追加
+
+    return result_json
+
+
 def myselectAll(mymodel):
     # session構築
     Session = sessionmaker(bind=engine)

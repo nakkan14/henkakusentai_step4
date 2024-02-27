@@ -15,5 +15,6 @@ password = 'password'
 host = 'host'
 database_name = 'database_name'
 engine = sqlalchemy.create_engine(f'mysql+mysqlconnector://{user}:{password}@{host}/{database_name}')
+#engine = create_engine("sqlite:///CRM.db", echo=True)
 
 
